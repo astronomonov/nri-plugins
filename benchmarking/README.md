@@ -6,6 +6,8 @@ This is work in progress
 
 1. Configure cluster to desired state.
 
+1.5 Install helm (in Fedora: "dnf install helm")
+
 2. Run the `pre_run.sh` script. This deploys Jaeger and Prometheus. Example:
 
 ```console

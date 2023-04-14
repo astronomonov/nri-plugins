@@ -25,8 +25,10 @@ while getopts ":n:p:" option; do
     esac
 done
 
+kubectl create namespace monitoring
 kubectl apply -f "${BASE_DIR}/manifests/jaeger-deployment.yaml"
 
 if [ "${USE_PROMETHEUS}" == "true" ]; then
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm install prometheus prometheus-community/prometheus --version 19.7.2 -f prometheus-values.yaml --namespace monitoring --create-namespace
 fi
