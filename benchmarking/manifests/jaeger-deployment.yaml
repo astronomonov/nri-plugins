@@ -24,6 +24,7 @@ spec:
         - containerPort: 16686
         - containerPort: 4318
         image: jaegertracing/all-in-one
+        imagePullPolicy: IfNotPresent
 ---
 apiVersion: v1
 kind: Service
