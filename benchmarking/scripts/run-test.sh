@@ -9,20 +9,21 @@ NUMBER_OF_CONTAINERS_IN_INCREMENT="1"
 NUMBER_OF_INCREMENTS="1"
 FILENAME_LABEL=""
 SLEEP_AFTER_TEST="15s"
+WORKLOAD="stress-ng"
 
 usage () {
     cat << EOF
 usage: $0
-    -n <number of stress-ng containers in increment>
+    -n <number of workload containers in increment>
     -i <increments>
     -l <filename label>
     -s <time to sleep waiting to query results>
-
+    -w <workload/template to use for workload deployment (default: stress-ng)>
 EOF
     exit 1
 }
 
-while getopts ":n:i:l:s:" option; do
+while getopts ":n:i:l:s:w:" option; do
     case ${option} in
         n) 
             NUMBER_OF_CONTAINERS_IN_INCREMENT="${OPTARG}"
@@ -36,30 +37,40 @@ while getopts ":n:i:l:s:" option; do
         s)
             SLEEP_AFTER_TEST="${OPTARG}"
             ;;
+        w)
+            WORKLOAD="${OPTARG}"
+            ;;
         \?)
             usage
     esac
 done
+
+case $WORKLOAD in
+    */*.yaml) ;;
+    *) WORKLOAD="${BASE_DIR}/manifests/${WORKLOAD}-deployment.yaml";;
+esac
+DEPLOYMENT="${WORKLOAD##*/}"
+DEPLOYMENT="${DEPLOYMENT%-deployment.yaml}"
 
 START_TIME=$(date +%s)
 
 # Loop for creating containers in increments.
 for ((i = 1; i <= ${NUMBER_OF_INCREMENTS}; i++));
 do
-    # Adjust amount of stress-ng replicas.
+    # Adjust amount of $WORKLOAD replicas.
     export NUMBER_OF_REPLICAS=$((NUMBER_OF_CONTAINERS_IN_INCREMENT * i))
     echo "creation iteration ${i}, adjusting containers to ${NUMBER_OF_REPLICAS}"
-    envsubst < "${BASE_DIR}/manifests/stress-ng-deployment.yaml" | kubectl apply -f -
-    kubectl rollout status deployment stress-ng
+    envsubst < "${WORKLOAD}" | kubectl apply -f -
+    kubectl rollout status deployment $DEPLOYMENT
 done
 
 # Loop for destroying containers in increments.
 for ((i = ${NUMBER_OF_INCREMENTS} - 1; i >= 0; i--));
 do
-    # Adjust amount of stress-ng replicas.
+    # Adjust amount of $WORKLOAD replicas.
     export NUMBER_OF_REPLICAS=$((NUMBER_OF_CONTAINERS_IN_INCREMENT * i))
     echo "destruction iteration ${i}, adjusting containers to ${NUMBER_OF_REPLICAS}"
-    envsubst < "${BASE_DIR}/manifests/stress-ng-deployment.yaml" | kubectl apply -f -
+    envsubst < "${WORKLOAD}" | kubectl apply -f -
 
     # Wait for replicas to be terminated
     while [[ $(kubectl get pods -A | awk '$4 == "Terminating" {print $4}') ]]
