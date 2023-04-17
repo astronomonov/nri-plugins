@@ -4,43 +4,67 @@ This is work in progress
 
 ## How to use
 
-1. Configure cluster to desired state.
+1. Install [helm](https://helm.sh/) for installing Prometheus chart.
 
-1.5 Install helm (in Fedora: "dnf install helm")
+2. Install [pipenv](https://pypi.org/project/pipenv/) for plotting graphs.
 
-2. Run the `pre_run.sh` script. This deploys Jaeger and Prometheus. Example:
+### Running the scripts together
+
+3. Run the script, for example:
 
 ```console
-./scripts/pre_run.sh
+template=~/nri-plugins/build/images/nri-resource-policy-template-deployment.yaml topology_aware=~/nri-plugins/build/images/nri-resource-policy-topology-aware-deployment.yaml balloons=~/nri-plugins/build/images/nri-resource-policy-balloons-deployment.yaml ./scripts/run-tests.sh
+```
+
+4. Run `pipenv shell`.
+
+5. Run `pipenv install`.
+
+6. Generate graphs with `plot-graphs.py`. If you use labels `baseline`, `template`, `topology-aware`, and `balloons` you can use the `post-run.sh` script.
+
+7. Remove all files from the output directory to not have overlapping labels (filenames).
+
+### Running the scripts individually
+
+3. Configure cluster to desired state.
+
+4. Run the `pre-run.sh` script. This deploys Jaeger and Prometheus. Example:
+
+```console
+./scripts/pre-run.sh
 ```
 
 ```console
-usage: ./scripts/pre_run.sh -p <use prometheus: "true" or "false">
+usage: ./scripts/pre-run.sh -p <use prometheus: "true" or "false">
 ```
 
-3. Wait for the Jaeger and Prometheus pods to be ready.
+5. Wait for the Jaeger and Prometheus pods to be ready.
 
-4. Run the test with `run_test.sh`. Example:
+6. Run the test with `run-test.sh`. Example:
 
 ```console
-./scripts/run_test.sh -n 10 -i 9 -l baseline
+./scripts/run-test.sh -n 10 -i 9 -l baseline
 ```
 
 ```console
-usage: ./scripts/run_test.sh
+usage: ./scripts/run-test.sh
     -n <number of stress-ng containers in increment>
     -i <increments>
     -l <filename label>
     -s <time to sleep waiting to query results>
 ```
 
-5. To remove installed resources, run `destroy-deployment.sh`.
+7. To remove installed resources, run `destroy-deployment.sh`.
 
-6. Repeat steps 1-5 for each desired setup and **label each setup with different labels that are not substrings of each other**.
+8. Repeat steps 1-5 for each desired setup and **label each setup with different labels that are not substrings of each other**.
 
-7. Generate graphs with `plot-graphs.py`. If you use labels `baseline`, `template`, and `topology-aware` you can use the `post_run.sh` script.
+9. Run `pipenv shell`.
 
-8. Remove all files from the output directory to not have overlapping labels (filenames).
+10. Run `pipenv install`.
+
+11. Generate graphs with `plot-graphs.py`. If you use labels `baseline`, `template`, `topology-aware`, and `balloons` you can use the `post-run.sh` script.
+
+12. Remove all files from the output directory to not have overlapping labels (filenames).
 
 ## How to setup tracing
 

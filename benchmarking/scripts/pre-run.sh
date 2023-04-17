@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Currently only for deploying Prometheus.
+# For deploying Prometheus and Jaeger tracing all-in-one.
 
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 BASE_DIR="$(realpath "${SCRIPT_DIR}/..")"
@@ -32,3 +32,7 @@ if [ "${USE_PROMETHEUS}" == "true" ]; then
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm install prometheus prometheus-community/prometheus --version 19.7.2 -f prometheus-values.yaml --namespace monitoring --create-namespace
 fi
+
+# Wait for deployments to be ready.
+kubectl rollout status deployment -n monitoring prometheus-server
+kubectl rollout status deployment -n monitoring jaeger

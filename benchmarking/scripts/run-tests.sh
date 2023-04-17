@@ -11,8 +11,8 @@ fi
 run_test() {
     local test=$1
 
-    echo "Executing: ${SCRIPT_DIR}/run_test.sh $PARAMS -l $test"
-    ${SCRIPT_DIR}/run_test.sh $PARAMS -l $test
+    echo "Executing: ${SCRIPT_DIR}/run-test.sh $PARAMS -l $test"
+    ${SCRIPT_DIR}/run-test.sh $PARAMS -l $test
 }
 
 cleanup_resource_policy() {
@@ -21,13 +21,15 @@ cleanup_resource_policy() {
 }
 
 cleanup_all() {
-    kubectl delete deployment stress-ng
+    ${SCRIPT_DIR}/destroy-deployment.sh
     cleanup_resource_policy
 }
 
 echo "***********"
 echo "Note that you must install nri-resource-policy plugin images manually before running this script."
 echo "***********"
+
+baseline="${baseline:-true}"
 
 if [ -z "$topology_aware" -o -z "$template" -o -z "$balloons" ]; then
     echo "Cannot find topology-aware, balloons or template deployment yaml file. Set it before for example like this:"
@@ -38,6 +40,7 @@ else
     echo "Using these resource policy deployments in the test:"
 fi
 
+echo "baseline       : $baseline"
 echo "topology_aware : $topology_aware"
 echo "balloons       : $balloons"
 echo "template       : $template"
@@ -48,28 +51,35 @@ cleanup_all
 # those resource policy tests that user has supplied deployment file.
 for test in baseline template topology-aware balloons
 do
-    if [ $test = template ]; then
-	if [ ! -f "$template" ]; then
-	    continue
-	fi
+    # Install necessary deployments with the pre-run.sh script.
+    # Unfortunately can not be done once before all tests
+    # because some old Prometheus timeseries remain otherwise.
+    ${SCRIPT_DIR}/pre-run.sh
 
-	kubectl apply -f "$template"
+    if [ $test = baseline ]; then
+        if [ "$baseline" != "true" ]; then
+            continue
+        fi
+    elif [ $test = template ]; then
+        if [ ! -f "$template" ]; then
+            continue
+        fi
+
+        kubectl apply -f "$template"
     elif [ $test = topology-aware ]; then
-	if [ ! -f "$topology-aware" ]; then
-	    continue
-	fi
+        if [ ! -f "$topology_aware" ]; then
+            continue
+        fi
 
-	kubectl apply -f "$topology_aware"
+        kubectl apply -f "$topology_aware"
     elif [ $test = balloons ]; then
-	if [ ! -f "$balloons" ]; then
-	    continue
-	fi
+        if [ ! -f "$balloons" ]; then
+            continue
+        fi
 
-	kubectl apply -f "$balloons"
+        kubectl apply -f "$balloons"
     fi
 
     run_test $test
-    cleanup_resource_policy
+    cleanup_all
 done
-
-cleanup_all
