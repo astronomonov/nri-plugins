@@ -25,16 +25,14 @@ cleanup_all() {
     cleanup_resource_policy
 }
 
-baseline=${baseline:-true}
+baseline="${baseline:-true}"
 
 echo "***********"
 echo "Note that you must install nri-resource-policy plugin images manually before running this script."
 echo "***********"
 
-baseline="${baseline:-true}"
-
-if [ -z "$topology_aware" -o -z "$template" -o -z "$balloons" ]; then
-    echo "Cannot find topology-aware, balloons or template deployment yaml file. Set it before for example like this:"
+if [ -z "$topology_aware" -a -z "$template" -a -z "$balloons" ]; then
+    echo "No topology-aware, balloons or template deployment yaml files set. Set at least one for example like this:"
     echo "topology_aware=<dir>/nri-resource-policy-topology-aware-deployment.yaml balloons=<dir>/nri-resource-policy-balloons-deployment.yaml template=<dir>/nri-resource-policy-template-deployment.yaml ./scripts/run_tests.sh"
     echo
     echo "Using only partial resource policy deployments in the test:"
@@ -42,10 +40,10 @@ else
     echo "Using these resource policy deployments in the test:"
 fi
 
-echo "baseline       : $baseline"
-echo "topology_aware : $topology_aware"
-echo "balloons       : $balloons"
-echo "template       : $template"
+echo "baseline       : ${baseline:-skipped}"
+echo "topology_aware : ${topology_aware:-skipped}"
+echo "balloons       : ${balloons:-skipped}"
+echo "template       : ${template:-skipped}"
 
 cleanup_all
 
@@ -60,23 +58,23 @@ do
     ${SCRIPT_DIR}/pre-run.sh
 
     if [ $test = baseline ]; then
-        if [ "$baseline" != "true" ]; then
+        if [ -z "$baseline" -o "$baseline" != "true" ]; then
             continue
         fi
     elif [ $test = template ]; then
-        if [ ! -f "$template" ]; then
+        if [ -z "$template" -o ! -f "$template" ]; then
             continue
         fi
 
 	kubectl apply -f "$template"
     elif [ $test = topology_aware ]; then
-	if [ ! -f "$topology_aware" ]; then
+	if [ -z "$topology_aware" -o ! -f "$topology_aware" ]; then
 	    continue
 	fi
 
         kubectl apply -f "$topology_aware"
     elif [ $test = balloons ]; then
-        if [ ! -f "$balloons" ]; then
+        if [ -z "$balloons" -o ! -f "$balloons" ]; then
             continue
         fi
 
