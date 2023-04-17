@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import argparse
@@ -17,7 +19,7 @@ def add_to_subplots(df):
 
 def createGraph(labels, inputFiles, output):
     plt.figure(figsize=(12, 12))
-    
+
     for file in inputFiles:
         df = pd.read_csv(file)
         add_to_subplots(df)
@@ -33,7 +35,7 @@ def createGraph(labels, inputFiles, output):
     result = "created {}, input files used:".format(output)
     for file in inputFiles:
         result += "\n" + file
-    
+
     return result
 
 def scanCsvFiles(directory, labels):
@@ -48,7 +50,7 @@ def scanCsvFiles(directory, labels):
     if len(labels) != len(result):
         print("matching csv files for all labels not found")
         sys.exit(1)
-    
+
     return result
 
 def parseLabels(labelArg):
