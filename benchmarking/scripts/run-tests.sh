@@ -25,6 +25,8 @@ cleanup_all() {
     cleanup_resource_policy
 }
 
+baseline=${baseline:-true}
+
 echo "***********"
 echo "Note that you must install nri-resource-policy plugin images manually before running this script."
 echo "***********"
@@ -47,9 +49,10 @@ echo "template       : $template"
 
 cleanup_all
 
-# Note that with this script, we always run the baseline and then
-# those resource policy tests that user has supplied deployment file.
-for test in baseline template topology-aware balloons
+# Note that with this script, we always run the baseline unless user
+# sets "baseline=0" when starting the script, and those resource policy
+# tests that user has supplied deployment file.
+for test in baseline template topology_aware balloons
 do
     # Install necessary deployments with the pre-run.sh script.
     # Unfortunately can not be done once before all tests
@@ -65,11 +68,11 @@ do
             continue
         fi
 
-        kubectl apply -f "$template"
-    elif [ $test = topology-aware ]; then
-        if [ ! -f "$topology_aware" ]; then
-            continue
-        fi
+	kubectl apply -f "$template"
+    elif [ $test = topology_aware ]; then
+	if [ ! -f "$topology_aware" ]; then
+	    continue
+	fi
 
         kubectl apply -f "$topology_aware"
     elif [ $test = balloons ]; then

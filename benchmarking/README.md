@@ -8,6 +8,13 @@ This is work in progress
 
 2. Install [pipenv](https://pypi.org/project/pipenv/) for plotting graphs.
 
+1.5 Install helm (in Fedora: "dnf install helm")
+    Install python plotter libraries
+
+```console
+pip3 install --user matplotlib pandas
+```
+
 ### Running the scripts together
 
 3. Run the script, for example:
