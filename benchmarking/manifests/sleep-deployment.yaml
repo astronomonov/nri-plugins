@@ -24,7 +24,8 @@ spec:
           - sleep 604800
         resources:
           requests:
-            cpu: 10m
-            memory: 20M
+            cpu: 500m
+            memory: 50M
           limits:
-            cpu: 10m
+            cpu: 500m
+      terminationGracePeriodSeconds: 1
