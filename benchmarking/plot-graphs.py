@@ -6,6 +6,8 @@ import argparse
 import sys
 import os
 
+result_count = 0
+
 def add_to_subplots(df):
     i = 1
     df_grouped = df.groupby("name")
@@ -38,16 +40,24 @@ def createGraph(labels, inputFiles, output):
 
     return result
 
-def scanCsvFiles(directory, labels):
+def scanCsvFiles(directory, labels, prefix):
     result = []
     directoryContents = os.listdir(directory)
+    result_count = 0
 
     for label in labels:
         for element in directoryContents:
-            if label in element:
-                result.append(directory + "/" + element)
+            if element.endswith(".csv"):
+                if prefix != "":
+                    if (prefix in element) and (label in element):
+                        result.append(directory + "/" + element)
+                        result_count += 1
+                else:
+                    if label in element:
+                        result.append(directory + "/" + element)
+                        result_count += 1
 
-    if len(labels) != len(result):
+    if len(labels) != result_count:
         print("matching csv files for all labels not found")
         sys.exit(1)
 
@@ -64,10 +74,11 @@ def main():
     parser.add_argument("directory", help="directory containing output to scan")
     parser.add_argument("-l", "--labels", required=True, help="comma-separated list of labels used in the test setups")
     parser.add_argument("-o", "--output", required=True, help="the output file")
+    parser.add_argument("-p", "--prefix", required=False, help="prefix of the output files")
     args = parser.parse_args(sys.argv[1:])
 
     labels = parseLabels(args.labels)
-    inputFiles = scanCsvFiles(args.directory, labels)
+    inputFiles = scanCsvFiles(args.directory, labels, args.prefix)
     print(createGraph(labels, inputFiles, args.output))
 
 if __name__ == "__main__":

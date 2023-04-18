@@ -5,12 +5,18 @@ BASE_DIR="$(realpath "${SCRIPT_DIR}/..")"
 
 LOG_DIR="$BASE_DIR/output"
 RUNTIME=${RUNTIME:-containerd}
+OUTPUT_PREFIX=""
 
 mkdir -p "$LOG_DIR"
 
 PARAMS="$*"
 if [ -z "$PARAMS" ]; then
     PARAMS="-n 10 -i 9"
+fi
+
+if [ ! -z "$PREFIX" ]; then
+    PARAMS="$PARAMS -p \"$PREFIX\""
+    OUTPUT_PREFIX="${PREFIX}-"
 fi
 
 get_pod_name() {
@@ -53,7 +59,7 @@ run_test() {
 
     pod=$(get_pod_name)
 
-    local prefix=$(date -u +"%Y%m%dT%H%M%SZ" -d "@${START_TIME}")
+    local prefix=${OUTPUT_PREFIX}$(date -u +"%Y%m%dT%H%M%SZ" -d "@${START_TIME}")
 
     kubectl -n kube-system logs "$pod" -f > "$LOG_DIR/$prefix-$test.log" 2>&1 &
 

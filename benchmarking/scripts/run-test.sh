@@ -10,6 +10,8 @@ NUMBER_OF_INCREMENTS="1"
 FILENAME_LABEL=""
 SLEEP_AFTER_TEST="15s"
 WORKLOAD="stress-ng"
+PREFIX=""
+OUTPUT_PREFIX=""
 
 usage () {
     cat << EOF
@@ -23,7 +25,7 @@ EOF
     exit 1
 }
 
-while getopts ":n:i:l:s:w:" option; do
+while getopts ":n:i:l:s:w:p:" option; do
     case ${option} in
         n) 
             NUMBER_OF_CONTAINERS_IN_INCREMENT="${OPTARG}"
@@ -40,6 +42,10 @@ while getopts ":n:i:l:s:w:" option; do
         w)
             WORKLOAD="${OPTARG}"
             ;;
+	p)
+	    PREFIX="${OPTARG}"
+	    OUTPUT_PREFIX="${PREFIX}-"
+	    ;;
         \?)
             usage
     esac
@@ -87,7 +93,7 @@ END_TIME=$(date +%s)
 sleep "${SLEEP_AFTER_TEST}"
 
 OUTPUT_FILE_DATE_PREFIX=$(date -u +"%Y%m%dT%H%M%SZ" -d "@${START_TIME}")
-OUTPUT_FILE_PREFIX="${OUTPUT_FILE_DATE_PREFIX}-${FILENAME_LABEL}"
+OUTPUT_FILE_PREFIX="${OUTPUT_PREFIX}${OUTPUT_FILE_DATE_PREFIX}-${FILENAME_LABEL}"
 
 mkdir -p "${BASE_DIR}/output"
 

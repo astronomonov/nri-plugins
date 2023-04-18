@@ -13,11 +13,12 @@ EOF
     exit 1
 }
 
-while getopts ":n:i:l:s:w:" option; do
+while getopts ":n:i:l:s:w:p:" option; do
     case ${option} in
         n) ;;
         i) ;;
         l) ;;
+	p) ;;
         s) ;;
         w)
             WORKLOAD="${OPTARG}"
