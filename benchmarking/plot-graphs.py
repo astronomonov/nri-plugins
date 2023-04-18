@@ -88,10 +88,16 @@ def scanCsvFiles(directory, labels, prefix):
     return result
 
 def parseLabels(labelArg):
-    labels = labelArg.split(",")
-    for label in labels:
-        label.strip()
-    return labels
+    labels = []
+    stripped = []
+    for l in labelArg.split(","):
+        l = l.strip()
+        labels.append(l)
+        l = l.replace("_", "-")
+        if l.endswith("-jaeger"):
+            l = l[:-7]
+        stripped.append(l)
+    return labels, stripped
 
 def main():
     parser = argparse.ArgumentParser(description="Get jaeger tracing data.")
@@ -104,10 +110,10 @@ def main():
     parser.add_argument("-w", "--workload", required=False, help="workload")
     args = parser.parse_args(sys.argv[1:])
 
-    labels = parseLabels(args.labels)
+    labels, stripped = parseLabels(args.labels)
     inputFiles = scanCsvFiles(args.directory, labels, args.prefix)
 
-    print(createGraph(labels, inputFiles, args))
+    print(createGraph(stripped, inputFiles, args))
 
 if __name__ == "__main__":
     main()
