@@ -21,7 +21,7 @@ cleanup_resource_policy() {
 }
 
 cleanup_all() {
-    ${SCRIPT_DIR}/destroy-deployment.sh
+    ${SCRIPT_DIR}/destroy-deployment.sh $PARAMS
     cleanup_resource_policy
 }
 
