@@ -83,6 +83,12 @@ cleanup_all() {
     cleanup_resource_policy
 }
 
+plot_graphs() {
+    local labels="$1"
+    echo "plotting graphs: ${BASE_DIR}/plot-graphs.py -o ${BASE_DIR}/output/${OUTPUT_PREFIX}results.png -l "$labels" ${BASE_DIR}/output $PARAMS"
+    ${BASE_DIR}/plot-graphs.py -o ${BASE_DIR}/output/${OUTPUT_PREFIX}results.png -l "$labels" ${BASE_DIR}/output $PARAMS
+}
+
 baseline="${baseline:-true}"
 
 echo "***********"
@@ -107,34 +113,43 @@ echo "template       : ${template:-skipped}"
 
 cleanup_all
 
+
 # Note that with this script, we always run the baseline unless user
 # sets "baseline=0" when starting the script, and those resource policy
 # tests that user has supplied deployment file.
+labels=""
+sep=""
 for test in baseline template topology_aware balloons
 do
-    if [ $test = baseline ]; then
-        if [ -z "$baseline" -o "$baseline" != "true" ]; then
-            continue
-        fi
-    elif [ $test = template ]; then
-        if [ -z "$template" -o ! -f "$template" ]; then
-            continue
-        fi
-
-	kubectl apply -f "$template"
-    elif [ $test = topology_aware ]; then
-	if [ -z "$topology_aware" -o ! -f "$topology_aware" ]; then
-	    continue
-	fi
-
-        kubectl apply -f "$topology_aware"
-    elif [ $test = balloons ]; then
-        if [ -z "$balloons" -o ! -f "$balloons" ]; then
-            continue
-        fi
-
-        kubectl apply -f "$balloons"
-    fi
+    case $test in
+        baseline)
+            if [ -z "$baseline" -o "$baseline" != "true" ]; then
+                continue
+            fi
+            labels="baseline-jaeger"; sep=","
+            ;;
+        template)
+            if [ -z "$template" -o ! -f "$template" ]; then
+                continue
+            fi
+            labels="$labels${sep}template-jaeger"; sep=","
+	    kubectl apply -f "$template"
+            ;;
+        topology_aware)
+	    if [ -z "$topology_aware" -o ! -f "$topology_aware" ]; then
+	        continue
+	    fi
+            labels="$labels${sep}topology_aware-jaeger"; sep=","
+            kubectl apply -f "$topology_aware"
+            ;;
+        balloons)
+            if [ -z "$balloons" -o ! -f "$balloons" ]; then
+                continue
+            fi
+            labels="$labels${sep}balloons-jaeger"; sep=","
+            kubectl apply -f "$balloons"
+            ;;
+    esac
 
     # Install necessary deployments with the pre-run.sh script.
     # Unfortunately can not be done once before all tests
@@ -144,3 +159,5 @@ do
     run_test $test
     cleanup_all
 done
+
+plot_graphs $labels
