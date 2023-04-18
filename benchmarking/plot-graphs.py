@@ -19,7 +19,28 @@ def add_to_subplots(df):
         ax.set_ylabel(y_axis_label)
         i += 1
 
-def createGraph(labels, inputFiles, output):
+def add_params(args):
+    if args.increments == None and args.containers == None and args.workload == None and args.prefix == None:
+        return
+
+    ax = plt.subplot(4, 2, 8)
+    ax.text(0.01, 0.91, "Test Run Parameters:")
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
+    y = 0.7
+    if args.prefix != None:
+        ax.text(0.05, y, ("prefix: %s" % args.prefix))
+        y = y - 0.1
+    if args.increments != None:
+        ax.text(0.05, y, ("number of increments: %s" % args.increments))
+        y = y - 0.1
+    if args.containers != None:
+        ax.text(0.05, y, ("containers per increment: %s" % args.containers))
+        y = y - 0.1
+    if args.workload != None:
+        ax.text(0.05, y, ("workload used: %s" % args.workload))
+
+def createGraph(labels, inputFiles, args):
     plt.figure(figsize=(12, 12))
 
     for file in inputFiles:
@@ -33,8 +54,11 @@ def createGraph(labels, inputFiles, output):
 
     plt.tight_layout()
     plt.figlegend(handles, labels, loc='lower right')
-    plt.savefig(output)
-    result = "created {}, input files used:".format(output)
+
+    add_params(args)
+
+    plt.savefig(args.output)
+    result = "created {}, input files used:".format(args.output)
     for file in inputFiles:
         result += "\n" + file
 
@@ -75,11 +99,15 @@ def main():
     parser.add_argument("-l", "--labels", required=True, help="comma-separated list of labels used in the test setups")
     parser.add_argument("-o", "--output", required=True, help="the output file")
     parser.add_argument("-p", "--prefix", required=False, help="prefix of the output files")
+    parser.add_argument("-i", "--increments", required=False, help="number of increments")
+    parser.add_argument("-n", "--containers", required=False, help="containers per increment")
+    parser.add_argument("-w", "--workload", required=False, help="workload")
     args = parser.parse_args(sys.argv[1:])
 
     labels = parseLabels(args.labels)
     inputFiles = scanCsvFiles(args.directory, labels, args.prefix)
-    print(createGraph(labels, inputFiles, args.output))
+
+    print(createGraph(labels, inputFiles, args))
 
 if __name__ == "__main__":
     main()
