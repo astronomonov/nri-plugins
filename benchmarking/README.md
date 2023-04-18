@@ -4,6 +4,9 @@ This is work in progress
 
 ## How to use
 
+0. In order to save container runtime logs, add yourself to systemd-journal
+   group and make sure you are in that group when running the script (use "id" command)
+
 1. Install [helm](https://helm.sh/) for installing Prometheus chart.
 
 2. Install [pipenv](https://pypi.org/project/pipenv/) for plotting graphs.

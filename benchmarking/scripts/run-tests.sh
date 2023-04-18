@@ -3,16 +3,68 @@
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 BASE_DIR="$(realpath "${SCRIPT_DIR}/..")"
 
+LOG_DIR="$BASE_DIR/output"
+RUNTIME=${RUNTIME:-containerd}
+
+mkdir -p "$LOG_DIR"
+
 PARAMS="$*"
 if [ -z "$PARAMS" ]; then
     PARAMS="-n 10 -i 9"
 fi
 
+get_pod_name() {
+    local pod
+    local timeout=20
+
+    pod=$(until kubectl get pods -n kube-system | awk '/nri-resource-policy-/ { print $1 }'
+	  do
+	      timeout=$(( $timeout - 1 ))
+	      if [ "$timeout" == "0" ]; then
+		  echo "Timeout while waiting nri resource policy plugin to start" > /dev/tty
+		  exit 1
+	      fi
+	      sleep 1
+	  done)
+
+    if [ -z "$pod" ]; then
+	echo "Pod not found" > /dev/tty
+	exit 1
+    fi
+
+    kubectl wait --timeout=10s --for=condition=Ready -n kube-system pod/$pod >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+	echo "Pod $pod not ready" > /dev/tty
+	exit 1
+    fi
+
+    echo $pod
+}
+
+pod=""
+
+START_TIME=$(date +%s)
+
 run_test() {
     local test=$1
 
+    # Let resource policy plugin to start
+    sleep 1
+
+    pod=$(get_pod_name)
+
+    local prefix=$(date -u +"%Y%m%dT%H%M%SZ" -d "@${START_TIME}")
+
+    kubectl -n kube-system logs "$pod" -f > "$LOG_DIR/$prefix-$test.log" 2>&1 &
+
     echo "Executing: ${SCRIPT_DIR}/run-test.sh $PARAMS -l $test"
+    echo "Log file: $LOG_DIR/$prefix-$test.log"
+
+    local current_time=$(date +"%Y-%m-%d %H:%M:%S")
+
     ${SCRIPT_DIR}/run-test.sh $PARAMS -l $test
+
+    journalctl --since="$current_time" -u $RUNTIME > "$LOG_DIR/$prefix-$RUNTIME-$test.log"
 }
 
 cleanup_resource_policy() {
@@ -31,9 +83,11 @@ echo "***********"
 echo "Note that you must install nri-resource-policy plugin images manually before running this script."
 echo "***********"
 
-if [ -z "$topology_aware" -a -z "$template" -a -z "$balloons" ]; then
-    echo "No topology-aware, balloons or template deployment yaml files set. Set at least one for example like this:"
-    echo "topology_aware=<dir>/nri-resource-policy-topology-aware-deployment.yaml balloons=<dir>/nri-resource-policy-balloons-deployment.yaml template=<dir>/nri-resource-policy-template-deployment.yaml ./scripts/run_tests.sh"
+baseline="${baseline:-true}"
+
+if [ -z "$topology_aware" -o -z "$template" -o -z "$balloons" ]; then
+    echo "Cannot find topology-aware, balloons or template deployment yaml file. Set it before for example like this:"
+    echo "topology_aware=<dir>/nri-resource-policy-topology-aware-deployment.yaml balloons=<dir>/nri-resource-policy-balloons-deployment.yaml template=<dir>/nri-resource-policy-template-deployment.yaml ./scripts/run-tests.sh"
     echo
     echo "Using only partial resource policy deployments in the test:"
 else
