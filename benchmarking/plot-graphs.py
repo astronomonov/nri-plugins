@@ -48,7 +48,7 @@ def scanCsvFiles(directory, labels, prefix):
     for label in labels:
         for element in directoryContents:
             if element.endswith(".csv"):
-                if prefix != "":
+                if prefix != None and prefix != "":
                     if (prefix in element) and (label in element):
                         result.append(directory + "/" + element)
                         result_count += 1
