@@ -106,11 +106,6 @@ cleanup_all
 # tests that user has supplied deployment file.
 for test in baseline template topology_aware balloons
 do
-    # Install necessary deployments with the pre-run.sh script.
-    # Unfortunately can not be done once before all tests
-    # because some old Prometheus timeseries remain otherwise.
-    ${SCRIPT_DIR}/pre-run.sh
-
     if [ $test = baseline ]; then
         if [ -z "$baseline" -o "$baseline" != "true" ]; then
             continue
@@ -134,6 +129,11 @@ do
 
         kubectl apply -f "$balloons"
     fi
+
+    # Install necessary deployments with the pre-run.sh script.
+    # Unfortunately can not be done once before all tests
+    # because some old Prometheus timeseries remain otherwise.
+    ${SCRIPT_DIR}/pre-run.sh
 
     run_test $test
     cleanup_all
