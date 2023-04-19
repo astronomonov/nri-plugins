@@ -15,7 +15,7 @@ if [ -z "$PARAMS" ]; then
 fi
 
 if [ ! -z "$PREFIX" ]; then
-    PARAMS="$PARAMS -p \"$PREFIX\""
+    PARAMS="$PARAMS -p $PREFIX"
     OUTPUT_PREFIX="${PREFIX}-"
 fi
 
