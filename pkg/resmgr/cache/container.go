@@ -357,8 +357,12 @@ func (c *container) GetTopologyHints() topology.Hints {
 func (c *container) getPendingRequest() interface{} {
 	if c.request == nil {
 		if c.GetState() == ContainerStateCreating {
+			log.Info("%s: add pending ContainerAdjustment (state %v)",
+				c.PrettyName(), c.GetState())
 			c.request = &nri.ContainerAdjustment{}
 		} else {
+			log.Info("%s: add pending ContainerUpdate (state %v)",
+				c.PrettyName(), c.GetState())
 			c.request = &nri.ContainerUpdate{
 				ContainerId: c.GetID(),
 			}
@@ -379,6 +383,9 @@ func (c *container) GetPendingAdjustment() *nri.ContainerAdjustment {
 		req = nil
 	}
 
+	log.Info("%s: cleared pending request (%T)", c.PrettyName(), req)
+
+
 	c.request = nil
 	return req
 }
@@ -394,6 +401,8 @@ func (c *container) GetPendingUpdate() *nri.ContainerUpdate {
 			c.PrettyName(), c.request)
 		req = nil
 	}
+
+	log.Info("%s: cleared pending request (%T)", c.PrettyName(), req)
 
 	c.request = nil
 	return req
