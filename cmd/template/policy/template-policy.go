@@ -15,6 +15,9 @@
 package template
 
 import (
+	"os"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	logger "github.com/containers/nri-plugins/pkg/log"
@@ -41,6 +44,9 @@ type allocations struct {
 // policy is our runtime state for this policy.
 type policy struct {
 	cache cache.Cache // pod/container cache
+
+	allocDelay   *time.Duration // emulated resource allocation delay
+	releaseDelay *time.Duration // emulated resource release delay
 }
 
 // Make sure policy implements the policy.Backend interface.
@@ -49,9 +55,35 @@ var log logger.Logger = logger.NewLogger("policy")
 
 // CreateTemplate creates a new policy instance.
 func CreateTemplatePolicy(opts *policyapi.BackendOptions) policyapi.Backend {
+	const (
+		allocDelay   = "TEMPLATE_ALLOC_DELAY"
+		releaseDelay = "TEMPLATE_RELEASE_DELAY"
+	)
+
 	p := &policy{
 		cache: opts.Cache,
 	}
+
+	if val := os.Getenv(allocDelay); val != "" {
+		ad, err := time.ParseDuration(val)
+		if err != nil {
+			log.Error("invalid environment %s = %s: %v", allocDelay, val, err)
+		} else {
+			log.Info("using emulated resource allocation delay %v", ad)
+			p.allocDelay = &ad
+		}
+	}
+
+	if val := os.Getenv(releaseDelay); val != "" {
+		rd, err := time.ParseDuration(val)
+		if err != nil {
+			log.Error("invalid environment %s = %s: %v", releaseDelay, val, err)
+		} else {
+			log.Info("using emulated resource release delay %v", rd)
+			p.releaseDelay = &rd
+		}
+	}
+
 	return p
 }
 
@@ -79,12 +111,18 @@ func (p *policy) Sync(add []cache.Container, del []cache.Container) error {
 // AllocateResources is a resource allocation request for this policy.
 func (p *policy) AllocateResources(container cache.Container) error {
 	log.Info("allocating resources for %s...", container.PrettyName())
+	if p.allocDelay != nil {
+		time.Sleep(*p.allocDelay)
+	}
 	return nil
 }
 
 // ReleaseResources is a resource release request for this policy.
 func (p *policy) ReleaseResources(container cache.Container) error {
 	log.Info("releasing resources of %s...", container.PrettyName())
+	if p.releaseDelay != nil {
+		time.Sleep(*p.releaseDelay)
+	}
 	return nil
 }
 
