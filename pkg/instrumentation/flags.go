@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/containers/nri-plugins/pkg/config"
-	"github.com/containers/nri-plugins/pkg/utils"
 )
 
 // Sampling defines how often trace samples are taken.
@@ -40,8 +39,6 @@ const (
 	defaultReportPeriod = "15s"
 	// defaultHTTPEndpoint is the default HTTP endpoint serving Prometheus /metrics.
 	defaultHTTPEndpoint = ""
-	// defaultPrometheusExport is the default state for Prometheus exporting.
-	defaultPrometheusExport = "false"
 )
 
 // options encapsulates our configurable instrumentation parameters.
@@ -55,10 +52,9 @@ type optstruct struct {
 
 	// ReportPeriod is the OpenCensus view reporting period.
 	ReportPeriod time.Duration
+
 	// HTTPEndpoint is our HTTP endpoint, used among others to export Prometheus /metrics.
 	HTTPEndpoint string
-	// PrometheusExport defines whether we export /metrics to/for Prometheus.
-	PrometheusExport bool `json:"PrometheusExport"`
 }
 
 // UnmarshalJSON is a resetting JSON unmarshaller for options.
@@ -162,17 +158,6 @@ func defaultOptions() interface{} {
 		"HTTP_ENDPOINT": {
 			defaultHTTPEndpoint,
 			func(v string) error { o.HTTPEndpoint = v; return nil },
-		},
-		"PROMETHEUS_EXPORT": {
-			defaultPrometheusExport,
-			func(v string) error {
-				enabled, err := utils.ParseEnabled(v)
-				if err != nil {
-					return err
-				}
-				o.PrometheusExport = enabled
-				return nil
-			},
 		},
 		"REPORT_PERIOD": {
 			defaultReportPeriod,

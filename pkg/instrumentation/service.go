@@ -24,14 +24,12 @@ import (
 type service struct {
 	sync.RWMutex              // we're RW-lockable
 	http         *http.Server // HTTP server
-	metrics      *metrics     // metrics data exporter
 }
 
 // newService creates an instance of our instrumentation services.
 func newService() *service {
 	return &service{
-		http:    http.NewServer(),
-		metrics: &metrics{},
+		http: http.NewServer(),
 	}
 }
 
@@ -46,10 +44,6 @@ func (s *service) Start() error {
 	if err != nil {
 		return instrumentationError("failed to start HTTP server: %v", err)
 	}
-	err = s.metrics.start(s.http.GetMux(), opt.ReportPeriod, opt.PrometheusExport)
-	if err != nil {
-		return instrumentationError("failed to start metrics: %v", err)
-	}
 
 	return nil
 }
@@ -59,7 +53,6 @@ func (s *service) Stop() {
 	s.Lock()
 	defer s.Unlock()
 
-	s.metrics.stop()
 	s.http.Stop()
 }
 
@@ -71,10 +64,6 @@ func (s *service) reconfigure() error {
 	err := s.http.Reconfigure(opt.HTTPEndpoint)
 	if err != nil {
 		return instrumentationError("failed to reconfigure HTTP server: %v", err)
-	}
-	err = s.metrics.reconfigure(s.http.GetMux(), opt.ReportPeriod, opt.PrometheusExport)
-	if err != nil {
-		return instrumentationError("failed to reconfigure metrics: %v", err)
 	}
 	return nil
 }

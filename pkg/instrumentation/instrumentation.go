@@ -17,7 +17,10 @@ package instrumentation
 import (
 	"fmt"
 
+	promcli "github.com/prometheus/client_golang/prometheus"
+
 	"github.com/containers/nri-plugins/pkg/http"
+	"github.com/containers/nri-plugins/pkg/instrumentation/metrics"
 	"github.com/containers/nri-plugins/pkg/instrumentation/tracing"
 	logger "github.com/containers/nri-plugins/pkg/log"
 )
@@ -32,6 +35,11 @@ var log = logger.NewLogger("instrumentation")
 
 // Our instrumentation service instance.
 var svc = newService()
+
+// RegisterGatherer registers a prometheus metrics gatherer.
+func RegisterGatherer(g promcli.Gatherer) {
+	metrics.RegisterGatherer(g)
+}
 
 // GetHTTPMux returns our HTTP request mux for external services.
 func GetHTTPMux() *http.ServeMux {
@@ -50,6 +58,15 @@ func Start() error {
 	)
 	if err != nil {
 		log.Errorf("failed to start opentelemetry tracing: %v", err)
+	}
+
+	err = metrics.Start(
+		GetHTTPMux(),
+		metrics.WithServiceName(ServiceName),
+		metrics.WithPeriod(opt.ReportPeriod),
+	)
+	if err != nil {
+		log.Errorf("failed tp start metrics exporter: %v", err)
 	}
 
 	if svc == nil {
