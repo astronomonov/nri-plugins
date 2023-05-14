@@ -18,12 +18,13 @@ import (
 	"fmt"
 
 	"github.com/containers/nri-plugins/pkg/http"
+	"github.com/containers/nri-plugins/pkg/instrumentation/tracing"
 	logger "github.com/containers/nri-plugins/pkg/log"
 )
 
 const (
 	// ServiceName is our service name in external tracing and metrics services.
-	ServiceName = "CRI-RM"
+	ServiceName = "NRI-Resource-Plugin"
 )
 
 // Our logger instance.
@@ -40,16 +41,17 @@ func GetHTTPMux() *http.ServeMux {
 	return svc.http.GetMux()
 }
 
-// TracingEnabled returns true if the Jaeger tracing sampler is not disabled.
-func TracingEnabled() bool {
-	if svc == nil {
-		return false
-	}
-	return svc.TracingEnabled()
-}
-
 // Start our internal instrumentation services.
 func Start() error {
+	err := tracing.Start(
+		tracing.WithServiceName(ServiceName),
+		tracing.WithCollectorEndpoint(opt.TracingCollector),
+		tracing.WithSamplingRatio(opt.Sampling.Ratio()),
+	)
+	if err != nil {
+		log.Errorf("failed to start opentelemetry tracing: %v", err)
+	}
+
 	if svc == nil {
 		return instrumentationError("cannot start, no instrumentation service instance")
 	}

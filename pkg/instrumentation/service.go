@@ -24,7 +24,6 @@ import (
 type service struct {
 	sync.RWMutex              // we're RW-lockable
 	http         *http.Server // HTTP server
-	tracing      *tracing     // tracing data exporter
 	metrics      *metrics     // metrics data exporter
 }
 
@@ -32,7 +31,6 @@ type service struct {
 func newService() *service {
 	return &service{
 		http:    http.NewServer(),
-		tracing: &tracing{},
 		metrics: &metrics{},
 	}
 }
@@ -48,10 +46,6 @@ func (s *service) Start() error {
 	if err != nil {
 		return instrumentationError("failed to start HTTP server: %v", err)
 	}
-	err = s.tracing.start(opt.JaegerAgent, opt.JaegerCollector, opt.Sampling)
-	if err != nil {
-		return instrumentationError("failed to start tracing: %v", err)
-	}
 	err = s.metrics.start(s.http.GetMux(), opt.ReportPeriod, opt.PrometheusExport)
 	if err != nil {
 		return instrumentationError("failed to start metrics: %v", err)
@@ -66,7 +60,6 @@ func (s *service) Stop() {
 	defer s.Unlock()
 
 	s.metrics.stop()
-	s.tracing.stop()
 	s.http.Stop()
 }
 
@@ -79,10 +72,6 @@ func (s *service) reconfigure() error {
 	if err != nil {
 		return instrumentationError("failed to reconfigure HTTP server: %v", err)
 	}
-	err = s.tracing.reconfigure(opt.JaegerAgent, opt.JaegerCollector, opt.Sampling)
-	if err != nil {
-		return instrumentationError("failed to reconfigure tracing: %v", err)
-	}
 	err = s.metrics.reconfigure(s.http.GetMux(), opt.ReportPeriod, opt.PrometheusExport)
 	if err != nil {
 		return instrumentationError("failed to reconfigure metrics: %v", err)
@@ -94,12 +83,4 @@ func (s *service) reconfigure() error {
 func (s *service) Restart() error {
 	s.Stop()
 	return s.Start()
-}
-
-// TracingEnabled returns true if the Jaeger tracing sampler is not disabled.
-func (s *service) TracingEnabled() bool {
-	s.RLock()
-	defer s.RUnlock()
-
-	return float64(opt.Sampling) > 0.0
 }
