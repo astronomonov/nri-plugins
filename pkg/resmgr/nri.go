@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/containers/nri-plugins/pkg/instrumentation/tracing"
 	logger "github.com/containers/nri-plugins/pkg/log"
 	"github.com/containers/nri-plugins/pkg/resmgr/cache"
 	"github.com/containers/nri-plugins/pkg/resmgr/events"
@@ -187,6 +188,16 @@ func (p *nriPlugin) Synchronize(pods []*api.PodSandbox, containers []*api.Contai
 
 func (p *nriPlugin) RunPodSandbox(pod *api.PodSandbox) (retErr error) {
 	event := RunPodSandbox
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(podSpanTags(pod)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod)
 	defer func() {
 		p.dump(out, event, retErr)
@@ -202,6 +213,16 @@ func (p *nriPlugin) RunPodSandbox(pod *api.PodSandbox) (retErr error) {
 
 func (p *nriPlugin) StopPodSandbox(pod *api.PodSandbox) (retErr error) {
 	event := StopPodSandbox
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(podSpanTags(pod)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod)
 	defer func() {
 		p.dump(out, event, retErr)
@@ -212,6 +233,16 @@ func (p *nriPlugin) StopPodSandbox(pod *api.PodSandbox) (retErr error) {
 
 func (p *nriPlugin) RemovePodSandbox(pod *api.PodSandbox) (retErr error) {
 	event := RemovePodSandbox
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(podSpanTags(pod)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod)
 	defer func() {
 		p.dump(out, event, retErr)
@@ -227,6 +258,16 @@ func (p *nriPlugin) RemovePodSandbox(pod *api.PodSandbox) (retErr error) {
 
 func (p *nriPlugin) CreateContainer(pod *api.PodSandbox, container *api.Container) (adjust *api.ContainerAdjustment, updates []*api.ContainerUpdate, retErr error) {
 	event := CreateContainer
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(containerSpanTags(pod, container)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod, container)
 	defer func() {
 		p.dump(out, event, adjust, updates, retErr)
@@ -265,6 +306,16 @@ func (p *nriPlugin) CreateContainer(pod *api.PodSandbox, container *api.Containe
 
 func (p *nriPlugin) StartContainer(pod *api.PodSandbox, container *api.Container) (retErr error) {
 	event := StartContainer
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(containerSpanTags(pod, container)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod, container)
 	defer func() {
 		p.dump(out, event, retErr)
@@ -296,6 +347,16 @@ func (p *nriPlugin) StartContainer(pod *api.PodSandbox, container *api.Container
 
 func (p *nriPlugin) UpdateContainer(pod *api.PodSandbox, container *api.Container) (updates []*api.ContainerUpdate, retErr error) {
 	event := UpdateContainer
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(containerSpanTags(pod, container)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod, container)
 	defer func() {
 		p.dump(out, event, updates, retErr)
@@ -312,6 +373,16 @@ func (p *nriPlugin) UpdateContainer(pod *api.PodSandbox, container *api.Containe
 
 func (p *nriPlugin) StopContainer(pod *api.PodSandbox, container *api.Container) (updates []*api.ContainerUpdate, retErr error) {
 	event := StopContainer
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(containerSpanTags(pod, container)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod, container)
 	defer func() {
 		p.dump(out, event, updates, retErr)
@@ -338,6 +409,16 @@ func (p *nriPlugin) StopContainer(pod *api.PodSandbox, container *api.Container)
 
 func (p *nriPlugin) RemoveContainer(pod *api.PodSandbox, container *api.Container) (retErr error) {
 	event := RemoveContainer
+
+	_, span := tracing.StartSpan(
+		context.TODO(),
+		event,
+		tracing.WithAttributes(containerSpanTags(pod, container)...),
+	)
+	defer func() {
+		span.End(tracing.WithStatus(retErr))
+	}()
+
 	p.dump(in, event, pod, container)
 	defer func() {
 		p.dump(out, event, retErr)
@@ -651,4 +732,30 @@ func marshal(kind string, obj interface{}) []byte {
 		data = []byte(fmt.Sprintf("<failed to marshal details of %s (%T): %v>", kind, obj, err))
 	}
 	return data
+}
+
+const (
+	SpanTagNamespace = "pod.namespace"
+	SpanTagPodID     = "pod.id"
+	SpanTagPodUID    = "pod.uid"
+	SpanTagPodName   = "pod.name"
+	SpanTagCtrID     = "container.id"
+	SpanTagCtrName   = "container.name"
+)
+
+func podSpanTags(pod *api.PodSandbox) []tracing.KeyValue {
+	namespace, podName := pod.GetNamespace(), pod.GetName()
+	return []tracing.KeyValue{
+		tracing.Attribute(SpanTagNamespace, namespace),
+		tracing.Attribute(SpanTagPodID, pod.GetId()),
+		tracing.Attribute(SpanTagPodUID, pod.GetUid()),
+		tracing.Attribute(SpanTagPodName, podName),
+	}
+}
+
+func containerSpanTags(pod *api.PodSandbox, ctr *api.Container) []tracing.KeyValue {
+	return append(podSpanTags(pod),
+		tracing.Attribute(SpanTagCtrID, ctr.GetId()),
+		tracing.Attribute(SpanTagCtrName, ctr.GetName()),
+	)
 }
