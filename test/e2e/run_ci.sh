@@ -23,4 +23,4 @@ if [ -f /mnt/env ]; then
 fi
 
 # Run the actual tests inside another VM.
-./run_tests.sh $1 "$GITHUB_WORKSPACE/e2e-test-results"
+./run_tests.sh $1 "$GITHUB_WORKSPACE/e2e-test-results" | ts -s '(%H:%M:%.S)]' | ts '[%Y-%m-%d %H:%M:%S'
